@@ -3,7 +3,7 @@
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#72d7ed;touch-action:manipulation;font-family:ui-monospace,monospace}#stage{position:fixed;inset:0;width:100vw;height:100dvh}canvas{width:100%;height:100%;display:block;image-rendering:auto}#hud{position:absolute;inset:0;pointer-events:none;color:#fff;font-weight:bold;text-shadow:2px 3px #42617b}#score{position:absolute;top:18px;left:24px;font-size:clamp(24px,4vw,42px)}#best{position:absolute;top:22px;right:24px;font-size:clamp(13px,2vw,20px)}#overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;text-shadow:3px 3px #76502e;background:#102c421c}.panel{padding:clamp(18px,4vw,36px);background:#286b83dd;border:4px solid #fff;box-shadow:6px 6px #36546b;max-width:90%}h1{font-size:clamp(36px,8vw,72px);margin:0 0 12px;letter-spacing:3px}p{font-size:clamp(14px,2.3vw,22px);line-height:1.5;margin:8px 0}.hint{font-size:clamp(11px,1.6vw,16px);margin-top:20px}#tap{position:absolute;inset:0;touch-action:manipulation}
 </style></head><body><div id="stage"><canvas id="game"></canvas><div id="hud"><div id="score">0</div><div id="best">BEST 0</div></div><div id="overlay"><div class="panel"><h1>FLAP!</h1><p>Tap or press SPACE to flap.<br>Fly through the pipes!</p><p class="hint">TAP / CLICK / SPACE TO START</p></div></div><div id="tap"></div></div>
-<script>(()=>{const c=document.querySelector('canvas'),ctx=c.getContext('2d'),overlay=document.getElementById('overlay'),scoreEl=document.getElementById('score'),bestEl=document.getElementById('best'),tap=document.getElementById('tap');let W=960,H=540,dpr=1,state='ready',bird,pipes,score=0,best=+(localStorage.flapBest||0),tick=0,last=0,clouds=[100,420,760,1100];const ground=58,pw=128,gap=300;
+<script>(()=>{const c=document.querySelector('canvas'),ctx=c.getContext('2d'),overlay=document.getElementById('overlay'),scoreEl=document.getElementById('score'),bestEl=document.getElementById('best'),tap=document.getElementById('tap');let W=960,H=540,dpr=1,state='ready',bird,pipes,score=0,best=+(localStorage.flapBest||0),tick=0,last=0,clouds=[100,420,760,1100];const ground=58,pw=154,gap=300;
 function resize(){dpr=Math.min(devicePixelRatio||1,2);c.width=Math.round(innerWidth*dpr);c.height=Math.round(innerHeight*dpr);W=c.width;H=c.height}addEventListener('resize',resize);resize();
 function reset(){bird={x:W*.28,y:H*.46,vy:0,rot:0};pipes=[];score=0;tick=0;addPipe(W+100);scoreEl.textContent='0'}function addPipe(x){const top=H*.17+Math.random()*H*.32;pipes.push({x,top,passed:false})}
 function show(title,msg,hint){overlay.innerHTML='<div class="panel"><h1>'+title+'</h1><p>'+msg+'</p><p class="hint">'+hint+'</p></div>';overlay.style.display='flex'}function begin(){if(state==='over')reset();state='play';overlay.style.display='none';flap()}function flap(){if(state==='ready'||state==='over'){begin();return}if(state==='play')bird.vy=-H*.55}function act(){if(state!=='play'){begin()}else flap()}tap.addEventListener('pointerdown',e=>{e.preventDefault();act()});addEventListener('keydown',e=>{if(['Space','ArrowUp','KeyW'].includes(e.code)){e.preventDefault();if(!e.repeat)act()}});function r(x,y,w,h,col){ctx.fillStyle=col;ctx.fillRect(x,y,w,h)}
@@ -13,39 +13,51 @@ let sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#3759a8');sky.addC
 ctx.fillStyle='#fff1bd';ctx.beginPath();ctx.arc(W*.78,H*.22,H*.09,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ffd78c';ctx.beginPath();ctx.arc(W*.78,H*.22,H*.065,0,Math.PI*2);ctx.fill();
 // pixel cloud streaks drifting slowly
 for(let i=0;i<5;i++){let x=((i*W*.29-tick*.12)%(W+180)+W+180)%(W+180)-90;let y=H*(.15+i%3*.12);r(x,y,110,13,'#fff0e4a8');r(x+20,y-12,55,13,'#fff0e4a8');r(x+75,y+8,45,9,'#fff0e4a8')}
-// Three deliberately distinct Manhattan parallax layers:
-// 1) far: soft, low, tightly packed rooftops; 2) mid: tall iconic towers;
-// 3) near: chunky dark street-front blocks with bold silhouettes.
-// Distant low-rise skyline
-let farStep=47,farOffset=(tick*.13)%farStep;
-for(let i=-2;i<W/farStep+3;i++){
- let x=i*farStep-farOffset,seed=((i*13+41)%9+9)%9,w=34+(seed%3)*5,h=H*(.09+seed*.013),y=H*.77-h;
- let col=['#b28ca9','#a982a4','#bd91a7'][seed%3];
- r(x,y,w,h,col);
- if(seed%3===0)r(x+w*.35,y-8,w*.3,8,col);
- for(let wy=y+14;wy<H*.76;wy+=24)for(let wx=x+7;wx<x+w-4;wx+=13)r(wx,wy,4,6,'#f6d5bd');
+// Countryside parallax: distant blue mountains, rolling green hills,
+ // a middle tree line, and close fields with hedgerows.
+ // Far mountain ridges drift very slowly.
+function ridge(points,color,offset){
+ ctx.beginPath();ctx.moveTo(-W,H*.77);
+ for(let i=0;i<points.length;i++){let x=points[i][0]*W-offset,y=points[i][1]*H;ctx.lineTo(x,y)}
+ ctx.lineTo(W,H*.78);ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();ctx.fillStyle=color;ctx.fill();
 }
-// Midground: separated tall skyscrapers with varied silhouettes and spires
-let midStep=108,midOffset=(tick*.39)%midStep;
-for(let i=-2;i<W/midStep+3;i++){
- let x=i*midStep-midOffset,seed=((i*7+19)%7+7)%7,w=66+(seed%2)*10,h=H*(.25+seed*.035),y=H*.85-h;
- let col=['#777ba5','#68799e','#84759e','#647f9e'][seed%4];
- r(x,y,w,h,col);
- if(seed===0){r(x+w*.18,y-22,w*.64,22,col);r(x+w*.32,y-45,w*.36,23,col);r(x+w*.47,y-78,5,33,'#d5b4c2');r(x+w*.49,y-98,2,20,'#d5b4c2')}
- else if(seed===3){r(x+w*.25,y-19,w*.5,19,col);r(x+w*.39,y-38,w*.22,19,col);r(x+w*.48,y-68,4,30,'#d5b4c2')}
- else if(seed===5){r(x+w*.12,y-13,w*.76,13,col);r(x+w*.28,y-27,w*.44,14,col);r(x+w*.46,y-49,5,22,'#d5b4c2')}
- else {r(x+9,y-12,w-18,12,col)}
- for(let wy=y+16;wy<H*.84;wy+=20)for(let wx=x+9;wx<x+w-6;wx+=15)r(wx,wy,6,9,'#ffe0a0');
+let mountainOffset=(tick*.08)%(W*.55);
+ridge([[0,.58],[.12,.43],[.23,.55],[.38,.34],[.53,.52],[.69,.39],[.82,.54],[.94,.42],[1,.56]],'#849fc1',mountainOffset);
+ridge([[0,.65],[.16,.51],[.3,.62],[.46,.46],[.61,.6],[.77,.48],[.91,.61],[1,.53]],'#6c91a7',(tick*.12)%(W*.42));
+// Rolling green hills
+function hillLayer(color,base,amp,step,speed,seed){
+ let off=(tick*speed)%step;
+ ctx.beginPath();ctx.moveTo(0,H);
+ for(let x=-step;x<=W+step;x+=step/2){let xx=x-off,phase=((Math.floor((x+step)/step)+seed)%5);let yy=H*(base-amp*(phase===0?1:phase===2?.7:.25));ctx.lineTo(xx,yy)}
+ ctx.lineTo(W+step,H);ctx.closePath();ctx.fillStyle=color;ctx.fill();
 }
-// Foreground: broad, dark, irregular building masses, few large windows
-let nearStep=154,nearOffset=(tick*.78)%nearStep;
-for(let i=-2;i<W/nearStep+3;i++){
- let x=i*nearStep-nearOffset,seed=((i*11+23)%6+6)%6,w=116+(seed%2)*20,h=H*(.14+seed*.025),y=H*.89-h,col=['#2d456d','#35496f','#293e65'][seed%3];
- r(x,y,w,h,col);
- if(seed===0){r(x+w*.16,y-18,w*.68,18,col);r(x+w*.32,y-35,w*.36,17,col);r(x+w*.47,y-58,5,23,'#bba3bd')}
- else if(seed===2){r(x+w*.3,y-24,w*.4,24,col);r(x+w*.46,y-44,5,20,'#bba3bd')}
- else if(seed===4){r(x+w*.08,y-12,w*.84,12,col);r(x+w*.4,y-29,w*.2,17,col)}
- for(let wy=y+17;wy<H*.88;wy+=24)for(let wx=x+14;wx<x+w-10;wx+=25)r(wx,wy,10,11,'#eebd78');
+hillLayer('#729e69',.72,.12,W*.34,.2,1);
+hillLayer('#568653',.81,.10,W*.28,.42,3);
+// Middle distance tree line: individual pine silhouettes on the hills
+let treeStep=58,treeOffset=(tick*.52)%treeStep;
+for(let i=-2;i<W/treeStep+3;i++){
+ let x=i*treeStep-treeOffset,seed=((i*7+31)%5+5)%5,y=H*(.73+seed*.018),h=H*(.09+seed*.012);
+ r(x+14,y-h*.45,5,h*.45,'#604f43');
+ ctx.fillStyle=['#326b4b','#39784b','#2e6547'][seed%3];
+ ctx.beginPath();ctx.moveTo(x+16,y-h);ctx.lineTo(x+1,y-h*.48);ctx.lineTo(x+8,y-h*.48);ctx.lineTo(x-3,y-h*.18);ctx.lineTo(x+34,y-h*.18);ctx.lineTo(x+24,y-h*.5);ctx.lineTo(x+31,y-h*.5);ctx.closePath();ctx.fill();
+}
+// Foreground fields: alternating lush strips, furrows, and hedgerow accents
+r(0,H*.82,W,H*.18,'#4f8245');
+let fieldOffset=(tick*.95)%96;
+for(let x=-96-fieldOffset;x<W+96;x+=96){
+ r(x,H*.83,62,H*.17,'#689b4d');
+ r(x+62,H*.83,34,H*.17,'#477a42');
+ r(x+8,H*.87,3,H*.13,'#8bb65a');r(x+22,H*.87,3,H*.13,'#8bb65a');
+}
+// Scattered leafy trees closer to the viewer
+let closeStep=190,closeOffset=(tick*1.05)%closeStep;
+for(let i=-2;i<W/closeStep+3;i++){
+ let x=i*closeStep-closeOffset,seed=((i*11+7)%4+4)%4,y=H*.84,h=H*(.12+seed*.012);
+ r(x+31,y-h*.45,9,h*.45,'#70503b');
+ ctx.fillStyle=['#285d3d','#347344','#2d673e'][seed%3];
+ ctx.beginPath();ctx.arc(x+35,y-h*.67,h*.28,0,Math.PI*2);ctx.fill();
+ ctx.beginPath();ctx.arc(x+18,y-h*.56,h*.21,0,Math.PI*2);ctx.fill();
+ ctx.beginPath();ctx.arc(x+51,y-h*.55,h*.22,0,Math.PI*2);ctx.fill();
 }
  // foreground street base and scrolling pavement
 r(0,H-ground,W,ground,'#b8a0a0');r(0,H-ground,W,12,'#f4ce8a');r(0,H-ground+12,W,7,'#796b85');for(let x=-(tick*1.6%54);x<W;x+=54){r(x,H-ground+27,28,5,'#e8c5a0');r(x+31,H-ground+42,18,5,'#8e7e91')}
