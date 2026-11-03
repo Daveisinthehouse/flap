@@ -13,33 +13,39 @@ let sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#3759a8');sky.addC
 ctx.fillStyle='#fff1bd';ctx.beginPath();ctx.arc(W*.78,H*.22,H*.09,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ffd78c';ctx.beginPath();ctx.arc(W*.78,H*.22,H*.065,0,Math.PI*2);ctx.fill();
 // pixel cloud streaks drifting slowly
 for(let i=0;i<5;i++){let x=((i*W*.29-tick*.12)%(W+180)+W+180)%(W+180)-90;let y=H*(.15+i%3*.12);r(x,y,110,13,'#fff0e4a8');r(x+20,y-12,55,13,'#fff0e4a8');r(x+75,y+8,45,9,'#fff0e4a8')}
-// Manhattan skyline: layered New York silhouettes with recognizable landmark towers
-// distant skyline
-let farStep=62,farOffset=(tick*.18)%farStep;
+// Three deliberately distinct Manhattan parallax layers:
+// 1) far: soft, low, tightly packed rooftops; 2) mid: tall iconic towers;
+// 3) near: chunky dark street-front blocks with bold silhouettes.
+// Distant low-rise skyline
+let farStep=47,farOffset=(tick*.13)%farStep;
 for(let i=-2;i<W/farStep+3;i++){
- let x=i*farStep-farOffset,seed=((i*17+53)%11+11)%11,h=H*(.14+seed*.018),w=42+(seed%3)*7,y=H*.76-h;
- r(x,y,w,h,['#9b829f','#8e789c','#a17d98'][seed%3]);
- for(let wy=y+15;wy<H*.75;wy+=22)for(let wx=x+8;wx<x+w-5;wx+=14)r(wx,wy,5,7,'#f8d4ac');
+ let x=i*farStep-farOffset,seed=((i*13+41)%9+9)%9,w=34+(seed%3)*5,h=H*(.09+seed*.013),y=H*.77-h;
+ let col=['#b28ca9','#a982a4','#bd91a7'][seed%3];
+ r(x,y,w,h,col);
+ if(seed%3===0)r(x+w*.35,y-8,w*.3,8,col);
+ for(let wy=y+14;wy<H*.76;wy+=24)for(let wx=x+7;wx<x+w-4;wx+=13)r(wx,wy,4,6,'#f6d5bd');
 }
-// mid skyline, including Empire State-style stepped crowns and spires
-let midStep=96,midOffset=(tick*.42)%midStep;
+// Midground: separated tall skyscrapers with varied silhouettes and spires
+let midStep=108,midOffset=(tick*.39)%midStep;
 for(let i=-2;i<W/midStep+3;i++){
- let x=i*midStep-midOffset,seed=((i*29+100)%10+10)%10,w=60+(seed%3)*8,h=H*(.22+seed*.025),y=H*.84-h;
- let col=['#65749b','#596b91','#786d9a','#607b9b'][seed%4];
+ let x=i*midStep-midOffset,seed=((i*7+19)%7+7)%7,w=66+(seed%2)*10,h=H*(.25+seed*.035),y=H*.85-h;
+ let col=['#777ba5','#68799e','#84759e','#647f9e'][seed%4];
  r(x,y,w,h,col);
- if(seed===2||seed===7){r(x+w*.22,y-17,w*.56,17,col);r(x+w*.34,y-34,w*.32,17,col);r(x+w*.46,y-55,5,21,'#d7a9b2');r(x+w*.49,y-73,2,18,'#d7a9b2')}
- else if(seed===5){r(x+w*.38,y-23,w*.24,23,col);r(x+w*.46,y-50,5,27,'#d7a9b2')}
- else {r(x+8,y-10,w-16,10,col)}
- for(let wy=y+15;wy<H*.83;wy+=19)for(let wx=x+8;wx<x+w-5;wx+=14)r(wx,wy,6,8,'#ffdf9b');
+ if(seed===0){r(x+w*.18,y-22,w*.64,22,col);r(x+w*.32,y-45,w*.36,23,col);r(x+w*.47,y-78,5,33,'#d5b4c2');r(x+w*.49,y-98,2,20,'#d5b4c2')}
+ else if(seed===3){r(x+w*.25,y-19,w*.5,19,col);r(x+w*.39,y-38,w*.22,19,col);r(x+w*.48,y-68,4,30,'#d5b4c2')}
+ else if(seed===5){r(x+w*.12,y-13,w*.76,13,col);r(x+w*.28,y-27,w*.44,14,col);r(x+w*.46,y-49,5,22,'#d5b4c2')}
+ else {r(x+9,y-12,w-18,12,col)}
+ for(let wy=y+16;wy<H*.84;wy+=20)for(let wx=x+9;wx<x+w-6;wx+=15)r(wx,wy,6,9,'#ffe0a0');
 }
-// closer, dense Manhattan blocks and Art Deco towers
-let nearStep=124,nearOffset=(tick*.78)%nearStep;
+// Foreground: broad, dark, irregular building masses, few large windows
+let nearStep=154,nearOffset=(tick*.78)%nearStep;
 for(let i=-2;i<W/nearStep+3;i++){
- let x=i*nearStep-nearOffset,seed=((i*19+200)%8+8)%8,w=88+(seed%2)*15,h=H*(.15+seed*.027),y=H*.89-h,col=['#354d78','#30496f','#3d527d'][seed%3];
+ let x=i*nearStep-nearOffset,seed=((i*11+23)%6+6)%6,w=116+(seed%2)*20,h=H*(.14+seed*.025),y=H*.89-h,col=['#2d456d','#35496f','#293e65'][seed%3];
  r(x,y,w,h,col);
- if(seed===3||seed===6){r(x+w*.2,y-15,w*.6,15,col);r(x+w*.34,y-31,w*.32,16,col);r(x+w*.47,y-54,5,23,'#d2a2ae')}
- else if(seed===1){r(x+w*.35,y-22,w*.3,22,col);r(x+w*.47,y-43,5,21,'#d2a2ae')}
- for(let wy=y+13;wy<H*.88;wy+=18)for(let wx=x+10;wx<x+w-7;wx+=17)r(wx,wy,7,8,'#ffd47d');
+ if(seed===0){r(x+w*.16,y-18,w*.68,18,col);r(x+w*.32,y-35,w*.36,17,col);r(x+w*.47,y-58,5,23,'#bba3bd')}
+ else if(seed===2){r(x+w*.3,y-24,w*.4,24,col);r(x+w*.46,y-44,5,20,'#bba3bd')}
+ else if(seed===4){r(x+w*.08,y-12,w*.84,12,col);r(x+w*.4,y-29,w*.2,17,col)}
+ for(let wy=y+17;wy<H*.88;wy+=24)for(let wx=x+14;wx<x+w-10;wx+=25)r(wx,wy,10,11,'#eebd78');
 }
  // foreground street base and scrolling pavement
 r(0,H-ground,W,ground,'#b8a0a0');r(0,H-ground,W,12,'#f4ce8a');r(0,H-ground+12,W,7,'#796b85');for(let x=-(tick*1.6%54);x<W;x+=54){r(x,H-ground+27,28,5,'#e8c5a0');r(x+31,H-ground+42,18,5,'#8e7e91')}
