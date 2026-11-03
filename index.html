@@ -63,15 +63,11 @@ for(let i=-2;i<W/closeStep+3;i++){
 r(0,H-ground,W,ground,'#b8a0a0');r(0,H-ground,W,12,'#f4ce8a');r(0,H-ground+12,W,7,'#796b85');for(let x=-(tick*1.6%54);x<W;x+=54){r(x,H-ground+27,28,5,'#e8c5a0');r(x+31,H-ground+42,18,5,'#8e7e91')}
 }
 function pipe(p){let bot=p.top+gap;let grad=ctx.createLinearGradient(p.x,0,p.x+pw,0);grad.addColorStop(0,'#16864c');grad.addColorStop(.22,'#45d66a');grad.addColorStop(.55,'#8af078');grad.addColorStop(1,'#237d42');r(p.x,0,pw,p.top-20,grad);r(p.x-10,p.top-20,pw+20,20,'#69ed77');r(p.x-10,p.top-20,pw+20,6,'#b0ff8d');r(p.x+15,0,12,p.top-20,'#a5ff9b');r(p.x+pw-18,0,8,p.top-20,'#146d3b');r(p.x,bot+20,pw,H-ground-bot-20,grad);r(p.x-10,bot,pw+20,20,'#69ed77');r(p.x-10,bot,pw+20,6,'#b0ff8d');r(p.x+15,bot+20,12,H-ground-bot-20,'#a5ff9b');r(p.x+pw-18,bot+20,8,H-ground-bot-20,'#146d3b');}
-function birdDraw(){let x=bird.x,y=bird.y;ctx.save();ctx.translate(x,y);ctx.scale(2.58,2.58);ctx.rotate(bird.rot);
- const earLift=bird.vy<0?Math.min(.72,Math.abs(bird.vy)/(H*.55)*.72):Math.max(-.12,-bird.vy/(H*.9)*.12);
- r(-20,-24,40,10,'#6b3218');r(-25,-17,50,31,'#8b451e');r(-23,8,46,12,'#71351c');
- for(let i=-2;i<=2;i++)r(i*8-3,-22,6,27,'#bd702d');
- ctx.save();ctx.translate(-20,-1);ctx.rotate(-earLift);r(-14,-5,15,12,'#e99576');r(-13,-4,10,7,'#f5b08b');r(-11,-2,7,3,'#c96e5b');ctx.restore();
- ctx.save();ctx.translate(20,-1);ctx.rotate(earLift);r(-1,-5,15,12,'#e99576');r(1,-4,10,7,'#f5b08b');r(3,-2,7,3,'#c96e5b');ctx.restore();
- r(-18,-19,36,34,'#f5b18b');r(-17,-21,34,7,'#a95a27');r(-14,-24,28,5,'#bd702d');
- r(-13,-8,9,2,'#6a3925');r(4,-8,9,2,'#6a3925');r(-12,-4,7,5,'#fff5dc');r(5,-4,7,5,'#fff5dc');r(-9,-3,3,4,'#6a5835');r(8,-3,3,4,'#6a5835');r(-2,1,4,5,'#df8e70');r(-8,8,16,3,'#a83f3c');r(-5,8,10,2,'#fff0d7');
- r(-21,7,4,7,'#f3c43b');r(18,7,4,7,'#f3c43b');r(-21,4,3,3,'#7bd64b');r(19,4,3,3,'#7bd64b');ctx.restore()}
+const emmaSprite=new Image();emmaSprite.src='https://daveisinthehouse.github.io/flap/emma-flap-sprites.png';
+function birdDraw(){let x=bird.x,y=bird.y;ctx.save();ctx.translate(x,y);ctx.rotate(bird.rot*.45);
+ if(emmaSprite.complete&&emmaSprite.naturalWidth){const frameW=emmaSprite.naturalWidth/8,frameH=emmaSprite.naturalHeight;let frame=Math.floor(tick/5)%8;let drawW=frameW*3.15,drawH=frameH*3.15;ctx.imageSmoothingEnabled=false;ctx.drawImage(emmaSprite,frame*frameW,0,frameW,frameH,-drawW/2,-drawH/2,drawW,drawH)}
+ else {ctx.scale(2.58,2.58);r(-20,-24,40,10,'#6b3218');r(-25,-17,50,31,'#8b451e');r(-18,-19,36,34,'#f5b18b');}
+ ctx.restore()}
 function die(){if(state!=='play')return;state='over';best=Math.max(best,score);localStorage.flapBest=best;bestEl.textContent='BEST '+best;show('GAME OVER','Score '+score+' · Best '+best,'TAP / CLICK / SPACE TO RETRY')}
 function update(dt){if(state!=='play')return;tick+=dt*60;bird.vy+=H*1.45*dt;bird.y+=bird.vy*dt;bird.rot=Math.max(-.5,Math.min(1,bird.vy/(H*.95)));let speed=W*.19;for(const p of pipes){p.x-=speed*dt;if(!p.passed&&p.x+pw<bird.x){p.passed=true;score++;scoreEl.textContent=score}}if(pipes[0]?.x+pw<0)pipes.shift();if(!pipes.length||pipes[pipes.length-1].x<W*.66)addPipe(W+30);if(bird.y+40>H-ground||bird.y-40<0)die();for(const p of pipes)if(bird.x+43>p.x&&bird.x-43<p.x+pw&&(bird.y-36<p.top||bird.y+36>p.top+gap))die()}
 function draw(){ctx.setTransform(1,0,0,1,0,0);background();pipes.forEach(pipe);birdDraw()}function loop(t){let dt=Math.min((t-last)/1000,.035)||0;last=t;update(dt);draw();requestAnimationFrame(loop)}bestEl.textContent='BEST '+best;reset();requestAnimationFrame(loop)})();</script></body></html>
