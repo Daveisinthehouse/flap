@@ -1,0 +1,9 @@
+name = "flap-leaderboard"
+main = "worker.js"
+compatibility_date = "2026-11-03"
+workers_dev = true
+
+[[d1_databases]]
+binding = "SCORES"
+database_name = "flap-leaderboard"
+database_id = "02b7d8c6-35a3-43e9-a901-5fbe112e5011"
