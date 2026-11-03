@@ -13,19 +13,38 @@ let sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#3759a8');sky.addC
 ctx.fillStyle='#fff1bd';ctx.beginPath();ctx.arc(W*.78,H*.22,H*.09,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ffd78c';ctx.beginPath();ctx.arc(W*.78,H*.22,H*.065,0,Math.PI*2);ctx.fill();
 // pixel cloud streaks drifting slowly
 for(let i=0;i<5;i++){let x=((i*W*.29-tick*.12)%(W+180)+W+180)%(W+180)-90;let y=H*(.15+i%3*.12);r(x,y,110,13,'#fff0e4a8');r(x+20,y-12,55,13,'#fff0e4a8');r(x+75,y+8,45,9,'#fff0e4a8')}
-// far skyline — tiny muted buildings
-let farW=34, farStep=52, farOffset=(tick*.22)%(farStep);
-for(let i=-2;i<W/farStep+3;i++){let x=i*farStep-farOffset;let h=H*(.12+((i*17+31)%7)*.018);let y=H*.73-h;r(x,y,farW,h,'#927ba8');r(x+5,y-10,8,10,'#927ba8');r(x+8,y+12,5,7,'#f8d4ac');r(x+22,y+25,5,7,'#f8d4ac');}
-// mid-city with towers, windows, rooftop shapes
-let midStep=76,midOffset=(tick*.48)%midStep;
-for(let i=-2;i<W/midStep+3;i++){let x=i*midStep-midOffset;let seed=(i*37+1000)%9;let h=H*(.18+seed*.025);let w=48+(seed%3)*8;let y=H*.82-h;let col=['#6a729c','#596b91','#786b94','#5d7897'][Math.abs(i)%4];r(x,y,w,h,col);r(x+5,y-13,w-10,13,col);r(x+w*.42,y-25,5,12,col);for(let wy=y+16;wy<H*.81;wy+=20){for(let wx=x+8;wx<x+w-5;wx+=14){r(wx,wy,6,9,'#ffdf9b');r(wx+1,wy+1,4,7,'#fff0bc')}}}
-// closer dark city silhouettes at low horizon
-let nearStep=112,nearOffset=(tick*.9)%nearStep;
-for(let i=-2;i<W/nearStep+3;i++){let x=i*nearStep-nearOffset;let seed=(i*19+200)%6;let h=H*(.13+seed*.027);let w=76+(seed%2)*18;let y=H*.88-h;let col=['#354d78','#30496f','#3d527d'][Math.abs(i)%3];r(x,y,w,h,col);if(seed%2===0){r(x+w*.35,y-25,20,25,col);r(x+w*.43,y-38,4,13,col)}for(let wy=y+15;wy<H*.87;wy+=19){for(let wx=x+10;wx<x+w-7;wx+=17)r(wx,wy,7,8,'#ffd47d')}}
+// Manhattan skyline: layered New York silhouettes with recognizable landmark towers
+// distant skyline
+let farStep=62,farOffset=(tick*.18)%farStep;
+for(let i=-2;i<W/farStep+3;i++){
+ let x=i*farStep-farOffset,seed=((i*17+53)%11+11)%11,h=H*(.14+seed*.018),w=42+(seed%3)*7,y=H*.76-h;
+ r(x,y,w,h,['#9b829f','#8e789c','#a17d98'][seed%3]);
+ for(let wy=y+15;wy<H*.75;wy+=22)for(let wx=x+8;wx<x+w-5;wx+=14)r(wx,wy,5,7,'#f8d4ac');
+}
+// mid skyline, including Empire State-style stepped crowns and spires
+let midStep=96,midOffset=(tick*.42)%midStep;
+for(let i=-2;i<W/midStep+3;i++){
+ let x=i*midStep-midOffset,seed=((i*29+100)%10+10)%10,w=60+(seed%3)*8,h=H*(.22+seed*.025),y=H*.84-h;
+ let col=['#65749b','#596b91','#786d9a','#607b9b'][seed%4];
+ r(x,y,w,h,col);
+ if(seed===2||seed===7){r(x+w*.22,y-17,w*.56,17,col);r(x+w*.34,y-34,w*.32,17,col);r(x+w*.46,y-55,5,21,'#d7a9b2');r(x+w*.49,y-73,2,18,'#d7a9b2')}
+ else if(seed===5){r(x+w*.38,y-23,w*.24,23,col);r(x+w*.46,y-50,5,27,'#d7a9b2')}
+ else {r(x+8,y-10,w-16,10,col)}
+ for(let wy=y+15;wy<H*.83;wy+=19)for(let wx=x+8;wx<x+w-5;wx+=14)r(wx,wy,6,8,'#ffdf9b');
+}
+// closer, dense Manhattan blocks and Art Deco towers
+let nearStep=124,nearOffset=(tick*.78)%nearStep;
+for(let i=-2;i<W/nearStep+3;i++){
+ let x=i*nearStep-nearOffset,seed=((i*19+200)%8+8)%8,w=88+(seed%2)*15,h=H*(.15+seed*.027),y=H*.89-h,col=['#354d78','#30496f','#3d527d'][seed%3];
+ r(x,y,w,h,col);
+ if(seed===3||seed===6){r(x+w*.2,y-15,w*.6,15,col);r(x+w*.34,y-31,w*.32,16,col);r(x+w*.47,y-54,5,23,'#d2a2ae')}
+ else if(seed===1){r(x+w*.35,y-22,w*.3,22,col);r(x+w*.47,y-43,5,21,'#d2a2ae')}
+ for(let wy=y+13;wy<H*.88;wy+=18)for(let wx=x+10;wx<x+w-7;wx+=17)r(wx,wy,7,8,'#ffd47d');
+}
  // foreground street base and scrolling pavement
 r(0,H-ground,W,ground,'#b8a0a0');r(0,H-ground,W,12,'#f4ce8a');r(0,H-ground+12,W,7,'#796b85');for(let x=-(tick*1.6%54);x<W;x+=54){r(x,H-ground+27,28,5,'#e8c5a0');r(x+31,H-ground+42,18,5,'#8e7e91')}
 }
-function pipe(p){let bot=p.top+gap;let grad=ctx.createLinearGradient(p.x,0,p.x+pw,0);grad.addColorStop(0,'#16864c');grad.addColorStop(.22,'#45d66a');grad.addColorStop(.55,'#8af078');grad.addColorStop(1,'#237d42');r(p.x,0,pw,p.top-20,grad);r(p.x-10,p.top-20,pw+20,20,'#69ed77');r(p.x-10,p.top-20,pw+20,6,'#b0ff8d');r(p.x+15,0,12,p.top-20,'#a5ff9b');r(p.x+pw-18,0,8,p.top-20,'#146d3b');r(p.x,bot+20,pw,H-ground-bot-20,grad);r(p.x-10,bot,pw+20,20,'#69ed77');r(p.x-10,bot,pw+20,6,'#b0ff8d');r(p.x+15,bot+20,12,H-ground-bot-20,'#a5ff9b');r(p.x+pw-18,bot+20,8,H-ground-bot-20,'#146d3b');r(p.x+pw*.4,p.top+5,5,Math.max(0,bot-p.top-30),'#baff9a')}
+function pipe(p){let bot=p.top+gap;let grad=ctx.createLinearGradient(p.x,0,p.x+pw,0);grad.addColorStop(0,'#16864c');grad.addColorStop(.22,'#45d66a');grad.addColorStop(.55,'#8af078');grad.addColorStop(1,'#237d42');r(p.x,0,pw,p.top-20,grad);r(p.x-10,p.top-20,pw+20,20,'#69ed77');r(p.x-10,p.top-20,pw+20,6,'#b0ff8d');r(p.x+15,0,12,p.top-20,'#a5ff9b');r(p.x+pw-18,0,8,p.top-20,'#146d3b');r(p.x,bot+20,pw,H-ground-bot-20,grad);r(p.x-10,bot,pw+20,20,'#69ed77');r(p.x-10,bot,pw+20,6,'#b0ff8d');r(p.x+15,bot+20,12,H-ground-bot-20,'#a5ff9b');r(p.x+pw-18,bot+20,8,H-ground-bot-20,'#146d3b');}
 function birdDraw(){let x=bird.x,y=bird.y;ctx.save();ctx.translate(x,y);ctx.scale(2.58,2.58);ctx.rotate(bird.rot); // crisp 16-bit sprite shapes
 r(-23,-15,36,29,'#f7bd2f');r(-14,-23,22,10,'#ffd95a');r(-17,7,20,11,'#d98a27');r(-19,-8,13,15,'#fff3b7');r(-21,-15,32,5,'#ffe67b');r(5,-10,10,10,'#fff');r(9,-8,5,5,'#20354b');r(12,-2,22,10,'#ff8b37');r(20,3,16,5,'#e34d35');r(-10,1,16,10,'#e7a83c');r(-18,14,15,4,'#b46c25');ctx.restore()}
 function die(){if(state!=='play')return;state='over';best=Math.max(best,score);localStorage.flapBest=best;bestEl.textContent='BEST '+best;show('GAME OVER','Score '+score+' · Best '+best,'TAP / CLICK / SPACE TO RETRY')}
