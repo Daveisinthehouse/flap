@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#75d8e8">
+<title>Flap — Retro Flight</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#75d8e8;font-family:ui-monospace,monospace;touch-action:none}
+  body{display:grid;place-items:center}
+  #game-wrap{position:relative;width:min(100vw,56.25vh);height:min(100vh,177.78vw);max-width:480px;max-height:854px;overflow:hidden;background:#75d8e8}
+  canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
+  #overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;text-shadow:3px 3px 0 #5b442e;pointer-events:none}
+  .panel{padding:18px 20px;max-width:90%;background:rgba(28,57,75,.28);border:3px solid rgba(255,255,255,.7);box-shadow:5px 5px 0 rgba(32,53,68,.25)}
+  h1{font-size:clamp(30px,9vw,48px);margin:0 0 12px;letter-spacing:2px}
+  p{font-size:clamp(13px,3.6vw,17px);line-height:1.5;margin:8px 0}
+  .hint{font-size:12px;opacity:.95;margin-top:16px}
+  #score{position:absolute;top:7%;left:0;right:0;text-align:center;font-size:clamp(32px,9vw,48px);font-weight:900;color:white;text-shadow:3px 3px 0 #8a653d;pointer-events:none}
+  #score small{display:block;font-size:12px;letter-spacing:2px}
+  #sound{position:absolute;top:12px;right:12px;width:40px;height:40px;border:2px solid #fff;background:#3b7f89;color:#fff;font-size:20px;z-index:2;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="game-wrap">
+  <canvas id="game" width="360" height="640" aria-label="Flap retro flying game"></canvas>
+  <div id="score">0<small>POINTS</small></div>
+  <button id="sound" aria-label="Toggle sound">♪</button>
+  <div id="overlay"><div class="panel"><h1>FLAP!</h1><p>Keep flying. Don't hit the pipes!</p><p class="hint">TAP / CLICK / SPACE TO FLAP</p></div></div>
+</div>
+<script>
+(() => {
+  const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+  const overlay=document.getElementById('overlay'),scoreEl=document.getElementById('score'),soundBtn=document.getElementById('sound');
+  const W=360,H=640,groundH=86,pipeW=58,gap=158;
+  let state='ready',bird,pipes,score,best=Number(localStorage.getItem('flapBest')||0),frame=0,soundOn=false,audio=null;
+  const rnd=(a,b)=>a+Math.random()*(b-a);
+  function reset(){bird={x:92,y:270,vy:0,rot:0};pipes=[];score=0;frame=0;addPipe(390);scoreEl.innerHTML='0<small>POINTS</small>';}
+  function addPipe(x){const top=rnd(90,330);pipes.push({x,top,passed:false});}
+  function show(title,body,hint){overlay.innerHTML='<div class="panel"><h1>'+title+'</h1><p>'+body+'</p><p class="hint">'+hint+'</p></div>';overlay.style.display='flex';}
+  function start(){if(state==='over'){reset()}state='playing';overlay.style.display='none';flap();}
+  function flap(){if(state!=='playing')return;bird.vy=-390;chirp(660,.045);}
+  function action(){if(state==='ready'||state==='over')start();else flap();}
+  function die(){if(state!=='playing')return;state='over';chirp(180,.13);if(score>best){best=score;localStorage.setItem('flapBest',best)}show('GAME OVER','Score: '+score+' &nbsp; Best: '+best,'TAP / CLICK / SPACE TO TRY AGAIN');}
+  function chirp(freq,duration){if(!soundOn)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.frequency.value=freq;o.type='square';g.gain.setValueAtTime(.035,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+duration)}catch(e){}}
+  soundBtn.addEventListener('click',e=>{e.stopPropagation();soundOn=!soundOn;soundBtn.textContent=soundOn?'♫':'♪';});
+  canvas.addEventListener('pointerdown',e=>{e.preventDefault();action()});
+  document.addEventListener('keydown',e=>{if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();if(!e.repeat)action()}});
+  function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}
+  function drawBackground(){
+    rect(0,0,W,H,'#75d8e8');
+    // soft pixel clouds
+    ctx.fillStyle='#dff8f3';[[42,88],[205,142],[290,62]].forEach(([x,y],i)=>{rect(x,y,48,12,'#dff8f3');rect(x+10,y-10,25,12,'#dff8f3');rect(x+27,y+5,28,8,'#dff8f3')});
+    // distant hills
+    rect(0,440,W,40,'#a6df9a');for(let x=-20;x<W;x+=90){rect(x,420,65,30,'#a6df9a');rect(x+12,410,40,20,'#a6df9a')}
+    rect(0,H-groundH,W,groundH,'#e8c77a');rect(0,H-groundH,W,12,'#83c957');
+    for(let x=0;x<W;x+=24){rect((x-frame*2)%W,H-groundH+15,12,5,'#d5ae5d');rect((x-frame*2+12)%W,H-groundH+42,12,5,'#d5ae5d')}
+  }
+  function drawPipe(p){
+    const bottomY=p.top+gap;
+    rect(p.x,0,pipeW,p.top-18,'#48ad55');rect(p.x-5,p.top-18,pipeW+10,18,'#69ca61');
+    rect(p.x+8,0,8,p.top-18,'#8be07a');rect(p.x+pipeW-13,0,6,p.top-18,'#2e8746');
+    rect(p.x,bottomY+18,pipeW,H-groundH-bottomY-18,'#48ad55');rect(p.x-5,bottomY,pipeW+10,18,'#69ca61');
+    rect(p.x+8,bottomY+18,8,H-groundH-bottomY-18,'#8be07a');rect(p.x+pipeW-13,bottomY+18,6,H-groundH-bottomY-18,'#2e8746');
+  }
+  function drawBird(){
+    const x=bird.x,y=bird.y;ctx.save();ctx.translate(x,y);ctx.rotate(bird.rot);
+    // chunky little sky bird
+    rect(-18,-13,29,25,'#f6c94f');rect(-11,-20,20,9,'#f6c94f');rect(-13,8,18,8,'#e7a83c');
+    rect(-15,-8,12,14,'#fff0a0');rect(3,-9,6,6,'#fff');rect(7,-8,3,3,'#25384a');
+    rect(10,-2,15,8,'#ef8744');rect(15,1,9,4,'#d85d3b');
+    rect(-10,0,13,8,'#e7a83c');rect(-8,2,10,4,'#f4b943');
+    ctx.restore();
+  }
+  function update(dt){
+    if(state!=='playing')return;frame+=dt*60;
+    bird.vy+=1300*dt;bird.y+=bird.vy*dt;bird.rot=Math.min(.95,Math.max(-.55,bird.vy/520));
+    const speed=145+Math.min(score*2.1,75);
+    for(const p of pipes){p.x-=speed*dt;if(!p.passed&&p.x+pipeW<bird.x){p.passed=true;score++;scoreEl.innerHTML=score+'<small>POINTS</small>';chirp(880,.05)}}
+    if(pipes.length&&pipes[0].x+pipeW< -10)pipes.shift();
+    if(pipes.length===0||pipes[pipes.length-1].x<205)addPipe(390);
+    const bx=bird.x-13,by=bird.y-14,bw=25,bh=25;
+    if(bird.y+14>H-groundH||bird.y-14<0)die();
+    for(const p of pipes){if(bx+bw>p.x&&bx<p.x+pipeW&&(by<p.top||by+bh>p.top+gap))die()}
+  }
+  function draw(){drawBackground();pipes.forEach(drawPipe);drawBird();}
+  let last=0;function loop(t){const dt=Math.min((t-last)/1000,.035)||0;last=t;update(dt);draw();requestAnimationFrame(loop)}
+  reset();show('FLAP!','Keep flying. Don\'t hit the pipes!','TAP / CLICK / SPACE TO FLAP');requestAnimationFrame(loop);
+})();
+</script>
+</div>
+</body>
+</html>
