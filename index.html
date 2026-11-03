@@ -24,8 +24,8 @@ h1{font-size:clamp(36px,8vw,78px);margin:0 0 12px;letter-spacing:3px}p{font-size
 <script>
 (()=> {
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),stage=document.getElementById('stage'),overlay=document.getElementById('overlay'),scoreEl=document.getElementById('score');
-let W=960,H=540,scale=1,state='ready',camera=0,coins=0,lives=3,last=0,worldEnd=6200,keys={},touch={},player,platforms=[],coinItems=[],enemies=[],particles=[],soundOn=false,audio;
-function resize(){const dpr=Math.min(devicePixelRatio||1,2);W=Math.max(320,Math.floor(innerWidth* dpr));H=Math.max(240,Math.floor(innerHeight*dpr));canvas.width=W;canvas.height=H;ctx.setTransform(1,0,0,1,0,0);scale=W/960;}
+let W=960,H=540,scaleX=1,scaleY=1,state='ready',camera=0,coins=0,lives=3,last=0,worldEnd=6200,keys={},touch={},player,platforms=[],coinItems=[],enemies=[],particles=[],soundOn=false,audio;
+function resize(){const dpr=Math.min(devicePixelRatio||1,2);W=Math.max(320,Math.floor(innerWidth* dpr));H=Math.max(240,Math.floor(innerHeight*dpr));canvas.width=W;canvas.height=H;ctx.setTransform(1,0,0,1,0,0);scaleX=W/960;scaleY=H/540;}
 addEventListener('resize',resize);resize();
 function reset(){camera=0;coins=0;lives=3;player={x:90,y:330,vx:0,vy:0,w:32,h:42,ground:false,inv:0,face:1};platforms=[];coinItems=[];enemies=[];particles=[];
 platforms.push({x:0,y:440,w:620},{x:700,y:390,w:270},{x:1040,y:440,w:330},{x:1450,y:360,w:260},{x:1780,y:420,w:370},{x:2220,y:370,w:280},{x:2580,y:440,w:440},{x:3090,y:390,w:320},{x:3500,y:340,w:300},{x:3880,y:430,w:460},{x:4430,y:370,w:320},{x:4840,y:430,w:450},{x:5370,y:360,w:300},{x:5760,y:430,w:600});
@@ -59,7 +59,7 @@ rect(x+5,y+24,24,13,'#e94f45');rect(x+1,y+24,7,12,'#f2bd82');rect(x+25,y+24,7,12
 rect(x+7,y+36,9,6,'#354a7c');rect(x+20,y+36,9,6,'#354a7c');rect(x+3,y+40,14,5,'#49362c');rect(x+18,y+40,14,5,'#49362c');
 }
 function drawEnemy(e){if(!e.alive)return;let x=e.x-camera;rect(x,e.y+7,e.w,e.h-7,'#8c4a2c');rect(x+3,e.y,e.w-6,13,'#bd7951');rect(x+6,e.y+8,5,5,'#fff');rect(x+18,e.y+8,5,5,'#fff');rect(x+7,e.y+9,3,3,'#242a36');rect(x+19,e.y+9,3,3,'#242a36');}
-function draw(){ctx.save();ctx.scale(scale,scale);drawSky();for(const p of platforms)drawGround(p);for(const c of coinItems)drawCoin(c);for(const e of enemies)drawEnemy(e);drawPlayer();ctx.restore()}
+function draw(){ctx.save();ctx.scale(scaleX,scaleY);drawSky();for(const p of platforms)drawGround(p);for(const c of coinItems)drawCoin(c);for(const e of enemies)drawEnemy(e);drawPlayer();ctx.restore()}
 function update(dt){if(state!=='play')return;const p=player;const left=keys.ArrowLeft||keys.KeyA||touch.left,right=keys.ArrowRight||keys.KeyD||touch.right;p.vx=left?-235:right?235:0;if(p.vx)p.face=Math.sign(p.vx);p.x+=p.vx*dt;p.vy+=1500*dt;p.y+=p.vy*dt;p.ground=false;
 for(const plat of platforms){if(p.x+p.w>plat.x&&p.x<plat.x+plat.w&&p.y+p.h>=plat.y&&p.y+p.h-p.vy*dt<=plat.y&&p.vy>=0){p.y=plat.y-p.h;p.vy=0;p.ground=true}}
 if(p.y>H/scale+120){hurt()}
