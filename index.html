@@ -1,93 +1,76 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#75d8e8">
-<title>Flap — Retro Flight</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#67c9ed"><title>Flap — Pixel Run</title>
 <style>
-  *{box-sizing:border-box}
-  html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#75d8e8;font-family:ui-monospace,monospace;touch-action:none}
-  body{display:grid;place-items:center}
-  #game-wrap{position:relative;width:min(100vw,56.25vh);height:min(100vh,177.78vw);max-width:480px;max-height:854px;overflow:hidden;background:#75d8e8}
-  canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
-  #overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;text-shadow:3px 3px 0 #5b442e;pointer-events:none}
-  .panel{padding:18px 20px;max-width:90%;background:rgba(28,57,75,.28);border:3px solid rgba(255,255,255,.7);box-shadow:5px 5px 0 rgba(32,53,68,.25)}
-  h1{font-size:clamp(30px,9vw,48px);margin:0 0 12px;letter-spacing:2px}
-  p{font-size:clamp(13px,3.6vw,17px);line-height:1.5;margin:8px 0}
-  .hint{font-size:12px;opacity:.95;margin-top:16px}
-  #score{position:absolute;top:7%;left:0;right:0;text-align:center;font-size:clamp(32px,9vw,48px);font-weight:900;color:white;text-shadow:3px 3px 0 #8a653d;pointer-events:none}
-  #score small{display:block;font-size:12px;letter-spacing:2px}
-  #sound{position:absolute;top:12px;right:12px;width:40px;height:40px;border:2px solid #fff;background:#3b7f89;color:#fff;font-size:20px;z-index:2;cursor:pointer}
-</style>
-</head>
-<body>
-<div id="game-wrap">
-  <canvas id="game" width="360" height="640" aria-label="Flap retro flying game"></canvas>
-  <div id="score">0<small>POINTS</small></div>
-  <button id="sound" aria-label="Toggle sound">♪</button>
-  <div id="overlay"><div class="panel"><h1>FLAP!</h1><p>Keep flying. Don't hit the pipes!</p><p class="hint">TAP / CLICK / SPACE TO FLAP</p></div></div>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#67c9ed;touch-action:none;font-family:ui-monospace,monospace}
+#stage{position:fixed;inset:0;width:100vw;height:100dvh;overflow:hidden;background:#67c9ed}
+canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
+#hud{position:absolute;inset:0;pointer-events:none;color:#fff;text-shadow:3px 3px #573d2d;font-weight:900}
+#score{position:absolute;left:22px;top:16px;font-size:clamp(17px,2.4vw,30px)}#help{position:absolute;right:20px;top:20px;text-align:right;font-size:clamp(11px,1.4vw,16px);line-height:1.6}
+#overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;text-shadow:4px 4px #573d2d;background:rgba(12,38,60,.16)}
+.panel{padding:clamp(18px,4vw,38px);background:rgba(27,68,92,.72);border:4px solid #fff;box-shadow:7px 7px #36546b;max-width:90%}
+h1{font-size:clamp(36px,8vw,78px);margin:0 0 12px;letter-spacing:3px}p{font-size:clamp(14px,2vw,22px);line-height:1.5;margin:8px 0}.hint{font-size:clamp(11px,1.5vw,16px);margin-top:20px}
+#touch{position:absolute;inset:auto 0 16px;display:flex;justify-content:space-between;padding:0 18px;pointer-events:none}
+.pad{display:flex;gap:10px}.touchbtn{pointer-events:auto;width:clamp(54px,9vw,82px);height:clamp(54px,9vw,82px);border:3px solid #fff;border-radius:12px;background:#285d7cbb;color:white;font-size:clamp(24px,4vw,38px);font-weight:bold;touch-action:none;user-select:none}
+@media (pointer:fine){#touch{opacity:.35}}@media (orientation:portrait){#help{top:65px}}
+</style></head>
+<body><div id="stage"><canvas id="game"></canvas>
+<div id="hud"><div id="score">COINS 000&nbsp;&nbsp; LIVES ♥♥♥</div><div id="help">MOVE: A / D or ← →<br>JUMP: SPACE / ↑</div></div>
+<div id="overlay"><div class="panel"><h1>FLAP RUN</h1><p>A retro, side-scrolling pixel adventure.</p><p>Run, jump across platforms and collect coins!</p><p class="hint">PRESS SPACE OR TAP JUMP TO START</p></div></div>
+<div id="touch"><div class="pad"><button class="touchbtn" id="left" aria-label="Move left">◀</button><button class="touchbtn" id="right" aria-label="Move right">▶</button></div><button class="touchbtn" id="jump" aria-label="Jump">▲</button></div>
 </div>
 <script>
-(() => {
-  const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
-  const overlay=document.getElementById('overlay'),scoreEl=document.getElementById('score'),soundBtn=document.getElementById('sound');
-  const W=360,H=640,groundH=86,pipeW=58,gap=158;
-  let state='ready',bird,pipes,score,best=Number(localStorage.getItem('flapBest')||0),frame=0,soundOn=false,audio=null;
-  const rnd=(a,b)=>a+Math.random()*(b-a);
-  function reset(){bird={x:92,y:270,vy:0,rot:0};pipes=[];score=0;frame=0;addPipe(390);scoreEl.innerHTML='0<small>POINTS</small>';}
-  function addPipe(x){const top=rnd(90,330);pipes.push({x,top,passed:false});}
-  function show(title,body,hint){overlay.innerHTML='<div class="panel"><h1>'+title+'</h1><p>'+body+'</p><p class="hint">'+hint+'</p></div>';overlay.style.display='flex';}
-  function start(){if(state==='over'){reset()}state='playing';overlay.style.display='none';flap();}
-  function flap(){if(state!=='playing')return;bird.vy=-390;chirp(660,.045);}
-  function action(){if(state==='ready'||state==='over')start();else flap();}
-  function die(){if(state!=='playing')return;state='over';chirp(180,.13);if(score>best){best=score;localStorage.setItem('flapBest',best)}show('GAME OVER','Score: '+score+' &nbsp; Best: '+best,'TAP / CLICK / SPACE TO TRY AGAIN');}
-  function chirp(freq,duration){if(!soundOn)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.frequency.value=freq;o.type='square';g.gain.setValueAtTime(.035,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+duration)}catch(e){}}
-  soundBtn.addEventListener('click',e=>{e.stopPropagation();soundOn=!soundOn;soundBtn.textContent=soundOn?'♫':'♪';});
-  canvas.addEventListener('pointerdown',e=>{e.preventDefault();action()});
-  document.addEventListener('keydown',e=>{if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();if(!e.repeat)action()}});
-  function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}
-  function drawBackground(){
-    rect(0,0,W,H,'#75d8e8');
-    // soft pixel clouds
-    ctx.fillStyle='#dff8f3';[[42,88],[205,142],[290,62]].forEach(([x,y],i)=>{rect(x,y,48,12,'#dff8f3');rect(x+10,y-10,25,12,'#dff8f3');rect(x+27,y+5,28,8,'#dff8f3')});
-    // distant hills
-    rect(0,440,W,40,'#a6df9a');for(let x=-20;x<W;x+=90){rect(x,420,65,30,'#a6df9a');rect(x+12,410,40,20,'#a6df9a')}
-    rect(0,H-groundH,W,groundH,'#e8c77a');rect(0,H-groundH,W,12,'#83c957');
-    for(let x=0;x<W;x+=24){rect((x-frame*2)%W,H-groundH+15,12,5,'#d5ae5d');rect((x-frame*2+12)%W,H-groundH+42,12,5,'#d5ae5d')}
-  }
-  function drawPipe(p){
-    const bottomY=p.top+gap;
-    rect(p.x,0,pipeW,p.top-18,'#48ad55');rect(p.x-5,p.top-18,pipeW+10,18,'#69ca61');
-    rect(p.x+8,0,8,p.top-18,'#8be07a');rect(p.x+pipeW-13,0,6,p.top-18,'#2e8746');
-    rect(p.x,bottomY+18,pipeW,H-groundH-bottomY-18,'#48ad55');rect(p.x-5,bottomY,pipeW+10,18,'#69ca61');
-    rect(p.x+8,bottomY+18,8,H-groundH-bottomY-18,'#8be07a');rect(p.x+pipeW-13,bottomY+18,6,H-groundH-bottomY-18,'#2e8746');
-  }
-  function drawBird(){
-    const x=bird.x,y=bird.y;ctx.save();ctx.translate(x,y);ctx.rotate(bird.rot);
-    // chunky little sky bird
-    rect(-18,-13,29,25,'#f6c94f');rect(-11,-20,20,9,'#f6c94f');rect(-13,8,18,8,'#e7a83c');
-    rect(-15,-8,12,14,'#fff0a0');rect(3,-9,6,6,'#fff');rect(7,-8,3,3,'#25384a');
-    rect(10,-2,15,8,'#ef8744');rect(15,1,9,4,'#d85d3b');
-    rect(-10,0,13,8,'#e7a83c');rect(-8,2,10,4,'#f4b943');
-    ctx.restore();
-  }
-  function update(dt){
-    if(state!=='playing')return;frame+=dt*60;
-    bird.vy+=1300*dt;bird.y+=bird.vy*dt;bird.rot=Math.min(.95,Math.max(-.55,bird.vy/520));
-    const speed=145+Math.min(score*2.1,75);
-    for(const p of pipes){p.x-=speed*dt;if(!p.passed&&p.x+pipeW<bird.x){p.passed=true;score++;scoreEl.innerHTML=score+'<small>POINTS</small>';chirp(880,.05)}}
-    if(pipes.length&&pipes[0].x+pipeW< -10)pipes.shift();
-    if(pipes.length===0||pipes[pipes.length-1].x<205)addPipe(390);
-    const bx=bird.x-13,by=bird.y-14,bw=25,bh=25;
-    if(bird.y+14>H-groundH||bird.y-14<0)die();
-    for(const p of pipes){if(bx+bw>p.x&&bx<p.x+pipeW&&(by<p.top||by+bh>p.top+gap))die()}
-  }
-  function draw(){drawBackground();pipes.forEach(drawPipe);drawBird();}
-  let last=0;function loop(t){const dt=Math.min((t-last)/1000,.035)||0;last=t;update(dt);draw();requestAnimationFrame(loop)}
-  reset();show('FLAP!','Keep flying. Don\'t hit the pipes!','TAP / CLICK / SPACE TO FLAP');requestAnimationFrame(loop);
+(()=> {
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),stage=document.getElementById('stage'),overlay=document.getElementById('overlay'),scoreEl=document.getElementById('score');
+let W=960,H=540,scale=1,state='ready',camera=0,coins=0,lives=3,last=0,worldEnd=6200,keys={},touch={},player,platforms=[],coinItems=[],enemies=[],particles=[],soundOn=false,audio;
+function resize(){const dpr=Math.min(devicePixelRatio||1,2);W=Math.max(320,Math.floor(innerWidth* dpr));H=Math.max(240,Math.floor(innerHeight*dpr));canvas.width=W;canvas.height=H;ctx.setTransform(1,0,0,1,0,0);scale=W/960;}
+addEventListener('resize',resize);resize();
+function reset(){camera=0;coins=0;lives=3;player={x:90,y:330,vx:0,vy:0,w:32,h:42,ground:false,inv:0,face:1};platforms=[];coinItems=[];enemies=[];particles=[];
+platforms.push({x:0,y:440,w:620},{x:700,y:390,w:270},{x:1040,y:440,w:330},{x:1450,y:360,w:260},{x:1780,y:420,w:370},{x:2220,y:370,w:280},{x:2580,y:440,w:440},{x:3090,y:390,w:320},{x:3500,y:340,w:300},{x:3880,y:430,w:460},{x:4430,y:370,w:320},{x:4840,y:430,w:450},{x:5370,y:360,w:300},{x:5760,y:430,w:600});
+for(let x=210;x<worldEnd-180;x+=rnd(155,210)){const p=platforms.find(p=>x>p.x&&x<p.x+p.w);if(p&&Math.random()>.25)coinItems.push({x,y:p.y-rnd(60,100),got:false})}
+for(const p of platforms){if(p.x>500&&Math.random()>.55)enemies.push({x:p.x+100,y:p.y-28,w:28,h:28,min:p.x+25,max:p.x+p.w-35,vx:55,alive:true})}
+scoreEl.textContent='COINS 000   LIVES ♥♥♥';
+}
+function rnd(a,b){return a+Math.random()*(b-a)}
+function show(title,msg,hint){overlay.innerHTML='<div class="panel"><h1>'+title+'</h1><p>'+msg+'</p><p class="hint">'+hint+'</p></div>';overlay.style.display='flex'}
+function start(){if(state==='over'||state==='won')reset();state='play';overlay.style.display='none';}
+function actJump(){if(state==='ready'){start();return}if(state!=='play')return;if(player.ground){player.vy=-590;player.ground=false;chirp(540,.05)}}
+function chirp(f,d){if(!soundOn)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();let o=audio.createOscillator(),g=audio.createGain();o.type='square';o.frequency.value=f;g.gain.setValueAtTime(.035,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+d)}catch(e){}}
+function keydown(e){if(['Space','ArrowUp','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();keys[e.code]=true;if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW')actJump()}
+function keyup(e){keys[e.code]=false}
+addEventListener('keydown',keydown);addEventListener('keyup',keyup);
+function bindButton(id,key){const b=document.getElementById(id);b.addEventListener('pointerdown',e=>{e.preventDefault();touch[key]=true;b.setPointerCapture(e.pointerId);if(key==='jump')actJump()});const off=e=>{e.preventDefault();touch[key]=false};b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('lostpointercapture',off)}
+bindButton('left','left');bindButton('right','right');bindButton('jump','jump');
+canvas.addEventListener('pointerdown',e=>{if(state==='ready')start();else if(state==='play'&&e.clientX>innerWidth*.42)actJump()});
+function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}
+function drawSky(){rect(0,0,960,540,'#67c9ed');
+// layered clouds and distant hills drift at different rates
+for(let i=0;i<12;i++){let x=((i*190-camera*.18)%1300+1300)%1300-150,y=55+(i%4)*58;rect(x,y,78,18,'#dff6ff');rect(x+18,y-15,38,18,'#dff6ff');rect(x+48,y+7,35,12,'#dff6ff')}
+for(let i=0;i<10;i++){let x=((i*170-camera*.35)%1200+1200)%1200-100;rect(x,350,100,85,'#91d99a');rect(x+20,325,65,35,'#91d99a');rect(x+44,305,25,20,'#91d99a')}
+}
+function drawGround(p){let x=p.x-camera;if(x+p.w<0||x>960)return;rect(x,p.y,p.w,110,'#b76a35');rect(x,p.y,p.w,14,'#70c943');rect(x,p.y+14,p.w,7,'#4b9d38');for(let xx=x;xx<x+p.w;xx+=42){rect(xx,p.y+36,22,6,'#96512d');rect(xx+12,p.y+70,20,6,'#96512d');}}
+function drawCoin(c){if(c.got)return;let x=c.x-camera;rect(x-7,c.y-10,14,20,'#f6c833');rect(x-4,c.y-7,5,14,'#fff18a');rect(x+3,c.y-5,3,10,'#c58b16')}
+function drawPlayer(){let x=player.x-camera,y=player.y;if(player.inv>0&&Math.floor(performance.now()/90)%2)return;
+// tiny pixel adventurer, original design
+rect(x+7,y+1,20,12,'#513b2b');rect(x+4,y+9,24,15,'#f2bd82');rect(x+7,y+8,20,4,'#e7a04f');rect(x+21,y+14,4,4,'#27384a');
+rect(x+5,y+24,24,13,'#e94f45');rect(x+1,y+24,7,12,'#f2bd82');rect(x+25,y+24,7,12,'#f2bd82');
+rect(x+7,y+36,9,6,'#354a7c');rect(x+20,y+36,9,6,'#354a7c');rect(x+3,y+40,14,5,'#49362c');rect(x+18,y+40,14,5,'#49362c');
+}
+function drawEnemy(e){if(!e.alive)return;let x=e.x-camera;rect(x,e.y+7,e.w,e.h-7,'#8c4a2c');rect(x+3,e.y,e.w-6,13,'#bd7951');rect(x+6,e.y+8,5,5,'#fff');rect(x+18,e.y+8,5,5,'#fff');rect(x+7,e.y+9,3,3,'#242a36');rect(x+19,e.y+9,3,3,'#242a36');}
+function draw(){ctx.save();ctx.scale(scale,scale);drawSky();for(const p of platforms)drawGround(p);for(const c of coinItems)drawCoin(c);for(const e of enemies)drawEnemy(e);drawPlayer();ctx.restore()}
+function update(dt){if(state!=='play')return;const p=player;const left=keys.ArrowLeft||keys.KeyA||touch.left,right=keys.ArrowRight||keys.KeyD||touch.right;p.vx=left?-235:right?235:0;if(p.vx)p.face=Math.sign(p.vx);p.x+=p.vx*dt;p.vy+=1500*dt;p.y+=p.vy*dt;p.ground=false;
+for(const plat of platforms){if(p.x+p.w>plat.x&&p.x<plat.x+plat.w&&p.y+p.h>=plat.y&&p.y+p.h-p.vy*dt<=plat.y&&p.vy>=0){p.y=plat.y-p.h;p.vy=0;p.ground=true}}
+if(p.y>H/scale+120){hurt()}
+p.x=Math.max(0,Math.min(worldEnd,p.x));camera=Math.max(0,Math.min(worldEnd-960,p.x-300));
+for(const c of coinItems){if(!c.got&&Math.abs(p.x+p.w/2-c.x)<24&&Math.abs(p.y+p.h/2-c.y)<28){c.got=true;coins++;scoreEl.textContent='COINS '+String(coins).padStart(3,'0')+'   LIVES '+'♥'.repeat(lives);chirp(880,.06)}}
+for(const e of enemies){if(!e.alive)continue;e.x+=e.vx*dt;if(e.x<e.min||e.x>e.max)e.vx*=-1;if(p.x+p.w>e.x&&p.x<e.x+e.w&&p.y+p.h>e.y&&p.y<e.y+e.h){if(p.vy>80&&p.y+p.h<e.y+17){e.alive=false;p.vy=-390;coins+=5;scoreEl.textContent='COINS '+String(coins).padStart(3,'0')+'   LIVES '+'♥'.repeat(lives);chirp(760,.07)}else hurt()}}
+if(p.x>worldEnd-100){state='won';show('LEVEL CLEAR!','You made it! Coins: '+coins,'TAP OR PRESS SPACE TO PLAY AGAIN')}
+if(p.inv>0)p.inv-=dt;
+}
+let hurtLock=0;function hurt(){if(state!=='play'||hurtLock>0)return;hurtLock=1.1;lives--;scoreEl.textContent='COINS '+String(coins).padStart(3,'0')+'   LIVES '+'♥'.repeat(lives);if(lives<=0){state='over';show('GAME OVER','Collected '+coins+' coins.','TAP OR PRESS SPACE TO RETRY');return}player.x=Math.max(0,player.x-100);player.y=220;player.vy=-250;player.inv=1.1;camera=Math.max(0,player.x-300);chirp(190,.12)}
+function loop(t){let dt=Math.min((t-last)/1000,.032)||0;last=t;hurtLock=Math.max(0,hurtLock-dt);update(dt);draw();requestAnimationFrame(loop)}
+reset();requestAnimationFrame(loop);
 })();
-</script>
-</div>
-</body>
-</html>
+</script></body></html>
