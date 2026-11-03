@@ -14,7 +14,7 @@ export default {
   if (request.method !== "POST") return json({ error:"Method not allowed" },405);
   let body;
   try { body = await request.json(); } catch { return json({ error:"Invalid JSON" },400); }
-  const name = typeof body.name === "string" ? body.name.trim().replace(/[<>\\u0000-\\u001f\\u007f]/g, "").slice(0,20) : "";
+  const name = typeof body.name === "string" ? body.name.trim().replace(/[<>\u0000-\u001f\u007f]/g, "").slice(0,20) : "";
   const score = Number(body.score);
   if (!name || !Number.isSafeInteger(score) || score < 0 || score > 1000000) return json({ error:"Enter a name and a valid score" },400);
   await env.SCORES.batch([
